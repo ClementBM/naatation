@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <!-- The CSS package above applies Google styling to buttons and other elements. -->
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.13.2/themes/smoothness/jquery-ui.css">
+    <?!= include('style'); ?>
+  </head>
+  <body>
+    <div class="sidebar branding-below">
+      <div id="legalcase-enums"></div>
+      <ol id="legalcase-attributes"></ol>
+    </div>
+
+    <div class="sidebar bottom">
+      <div id="bottom-buttons">
+        <button class="blue" id="reset-button">Effacer</button>
+        <button class="blue" id="export-button">Exporter</button>
+        <img id="loading" src="https://cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif" alt="" />
+      </div>
+
+      <img alt="Add-on logo" class="logo" src="https://notreaffaireatous.org/wp-content/uploads/2020/06/cropped-LogoNAAT_PinceauJaune-32x32.png" width="27" height="27">
+      <span class="gray branding-text">Outil d'annotation pour NAAT</span>
+    </div>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
+    <?!= include('annotation_sidebar_js'); ?>
+  </body>
+</html>

@@ -1,0 +1,309 @@
+<script>
+  const AGENT_TYPE = {
+    "Entreprise": 1,
+    "Etat": 2,
+    "Organisation publique": 3,
+    "Association": 4,
+    "Particulier": 5
+  }
+
+  const GROUND_TYPE = {
+    "Public trust": 1,
+    "Tort law": 2,
+    "Droits humains": 3,
+    "Normes environnementales": 4,
+    "Droit civil": 5
+  }
+
+  const RESOURCE_TYPE = {
+    "Décision": 1,
+    "Ouvrage/Article": 2,
+    "Newsletter": 3,
+  }
+
+  const MAP_TYPES = {
+    "agent": AGENT_TYPE,
+    "ground": GROUND_TYPE,
+    "resource": RESOURCE_TYPE
+  }
+
+  function showLoadingSpinner(){
+    $("#loading").show();
+  }
+
+  function hideLoadingSpinner(){
+    $("#loading").hide();
+  }
+
+  function guidGenerator() {
+    var S4 = function() {
+       return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+    };
+    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+  }
+
+  function removeAnnotation(attributeKey, contentToRemove) {
+    google.script.run
+      .withFailureHandler(function() {
+        google.script.run.generalError();
+      })
+      .withUserObject(this)
+      .removeAnnotation(attributeKey, contentToRemove);
+  }
+
+  function updateAnnotationType(containerId, spanContent, selectedType) {
+    google.script.run
+      .withFailureHandler(function() {
+        google.script.run.generalError();
+      })
+      .withUserObject(this)
+      .updateAnnotationType(containerId, spanContent, selectedType);
+  }
+
+  function createAnnotationItem(attributeContent, attributeType) {
+    const attribute_content_div = document.createElement("div");
+
+    const attribute_content_span = document.createElement("span");
+    attribute_content_span.innerHTML = attributeContent;
+    attribute_content_div.appendChild(attribute_content_span);
+
+    // type dropdown
+    if (Object.keys(MAP_TYPES).includes(attributeType)) {
+      var attribute_content_dropdown = document.createElement("select");
+      attribute_content_dropdown.id = guidGenerator();
+      var contents = attributeContent.split("*OPTION*");
+
+      var selectedOption = null;
+      if (contents.length > 1){
+        selectedOption = contents[1];
+      } else {
+        selectedOption = Object.keys(MAP_TYPES[attributeType])[0];
+      }
+
+      attribute_content_span.innerHTML = contents[0];
+      
+      for (option of Object.keys(MAP_TYPES[attributeType])){
+        const optionValue = MAP_TYPES[attributeType][option];
+
+        if (option == selectedOption) {
+          $(attribute_content_dropdown).append($("<option value='" + optionValue + "' selected>" + option + "</option>"));
+        } else {
+          $(attribute_content_dropdown).append($("<option value='" + optionValue + "'>" + option + "</option>"));
+        }
+      }
+      
+      attribute_content_dropdown.onchange = function() {
+        const selectedItem = document.getElementById(attribute_content_dropdown.id);
+        const selectedType = selectedItem.options[selectedItem.selectedIndex].text;
+
+        const spanContent = $(selectedItem.parentElement).find("span:first")[0].innerHTML;
+        const containerId = selectedItem.parentElement.parentElement.id;
+                
+        updateAnnotationType(containerId, spanContent, selectedType);
+      };
+
+      
+      attribute_content_div.appendChild(attribute_content_dropdown);
+    }
+    
+    // remove button
+    const attribute_content_remove = document.createElement("button");
+    $(attribute_content_remove).button({
+      icon: "ui-icon-trash",
+      showLabel: false
+    }).on("click", function() {
+      const contentToRemove = $(this).parent().find("span:first")[0].innerHTML;
+      const attributeKey = $(this).parent().parent().attr('id');
+      removeAnnotation(attributeKey, contentToRemove);
+
+      $(this).parent().remove();
+    });
+    attribute_content_div.appendChild(attribute_content_remove);
+
+    return attribute_content_div;
+  }
+
+  function createEnumItem(key, attributeContent, options) {
+    var attributeContentDiv = document.createElement("div");
+    attributeContentDiv.id = key + "-container";
+
+    for (option of options) {
+      if (attributeContent == option) {
+        $(attributeContentDiv).append($("<label class='ui-checkboxradio-label ui-checkboxradio-checked' for='" + option.replace(" ", "_") + "'>" + option + "</label>"));
+        $(attributeContentDiv).append($("<input class='ui-checkboxradio' checked type='radio' name='" + key + "' id='" + option.replace(" ", "_") + "'>"));
+      } else {
+        $(attributeContentDiv).append($("<label class='ui-checkboxradio-label' for='" + option.replace(" ", "_") + "'>" + option + "</label>"));
+        $(attributeContentDiv).append($("<input class='ui-checkboxradio' type='radio' name='" + key + "' id='" + option.replace(" ", "_") + "'>"));
+      }
+    }
+
+    return attributeContentDiv;
+  }
+
+  function highlightFailure(e) {
+    google.script.run
+      .withFailureHandler(function() {
+        google.script.run.generalError();
+      })
+      .showRequireSelectionError();
+  }
+
+  function highlightSelection(attributeKey, value) {
+    google.script.run
+      .withFailureHandler(highlightFailure)
+      .withSuccessHandler(highlightSuccess)
+      .withUserObject(this)
+      .highlightSelection(attributeKey, value);
+  }
+
+  function highlightSuccess(returnedDict, element) {
+
+    if (returnedDict) {
+      for (key of Object.keys(returnedDict)) {
+        if (returnedDict[key]["type"] == "enum") {
+          continue;
+        }
+        $("#" + key + "-container").find("div").remove();
+        updateAnnotation(key, returnedDict[key], $("#" + key + "-container"));
+      };
+    }
+  }
+  
+  function initAnnotationSuccess(annotationDict, element) {
+
+    if (annotationDict) {
+      var annotationItems = Object.keys(annotationDict).map(function(key) {
+        return [key, annotationDict[key]];
+      });
+
+      annotationItems.sort(function(first, second) {
+        return first[1]["order"] - second[1]["order"];
+      });
+
+      annotationItems.forEach(function(annotationItem) {
+        var key = annotationItem[0], item = annotationItem[1];
+
+        if (item["type"] == "enum") {
+          var attributeFieldset = document.createElement("fieldset");
+
+          $(attributeFieldset).append("<legend><b>" + item["name"] + "</b></legend>");
+          updateAnnotation(key, item, $(attributeFieldset));
+          $("#legalcase-enums").append(attributeFieldset);
+        } else {
+          var attributeLi = document.createElement("li");
+          attributeLi.className = "ui-widget-content";
+          attributeLi.id = key + "-container";
+          
+          $(attributeLi).append("<label><b>" + item["name"] + "</b></label>");
+          if (item["value"]) {
+            updateAnnotation(key, item, $(attributeLi));
+          }
+          
+          $("#legalcase-attributes").append(attributeLi);
+        }
+      });
+
+      $("#legalcase-enums input").checkboxradio({
+        icon: false
+      });
+      
+      $("#legalcase-enums input").on("click", function(event) {
+        const attributeKey = $(this).parent().attr("id");
+        const value = $(this).attr("id").replace("_", " ");
+        
+        highlightSelection(attributeKey, value);
+      });
+    }
+  }
+
+  function updateAnnotation(key, item, attributeComponent) {
+    var value = item["value"], type = item["type"];
+    switch (type) {
+      case "text":
+        var annotationItem = createAnnotationItem(value, type);
+        attributeComponent.append(annotationItem);
+        break;
+      case "date":
+        /* TODO convert string date to regular date object */
+        var annotationItem = createAnnotationItem(value, type);
+        attributeComponent.append(annotationItem);
+        break;
+      case "enum":
+        var annotationItem = createEnumItem(key, value, item["options"]);
+        attributeComponent.append(annotationItem);
+        break;
+      case "agent":
+      case "ground":
+      case "resource":
+        for (v of value.split("*SEP*")) {
+          var annotationItem = createAnnotationItem(v, type);
+          attributeComponent.append(annotationItem);
+        }
+        break;
+      default:
+        console.log("Unknown annotationValue type");
+    }
+  }
+
+  function initAnnotations() {
+    google.script.run
+      .withFailureHandler(function() {
+        google.script.run.generalError();
+      })
+      .withSuccessHandler(initAnnotationSuccess)
+      .withUserObject(this)
+      .initAnnotations();
+  }
+
+  $(function() {
+    hideLoadingSpinner();
+    initAnnotations();
+    
+    $("#legalcase-attributes").selectable({
+      filter: "li label",
+      selected: function( event, ui ) {
+        highlightSelection($(ui["selected"]).parent().attr("id"), null);
+      }
+    });
+
+    $("#reset-button").on("click", function() {
+      resetProperties();
+    });
+
+    $("#export-button").on("click", function() {
+      exportToSpreadSheet();
+    });
+  });
+
+  function resetProperties() {
+    $("#legalcase-attributes").empty();
+    $("#legalcase-enums").empty();
+
+    google.script.run 
+      .withFailureHandler(function() {
+        google.script.run.generalError();
+      })
+      .withSuccessHandler(function(e, i) { initAnnotations() })
+      .withUserObject(this)
+      .resetDocumentProperties();
+  }
+
+  function showError(msg, element) {
+    var div = $('<div id="error" class="error">' + msg + '</div>');
+    $(element).after(div);
+  }
+
+  function exportToSpreadSheet() {
+    showLoadingSpinner();
+    google.script.run 
+      .withFailureHandler(function() {
+        hideLoadingSpinner();
+        google.script.run.generalError();
+      })
+      .withSuccessHandler(function(e, i) {
+        hideLoadingSpinner();
+      })
+      .withUserObject(this)
+      .exportToSpreadSheet();
+  }
+</script>
