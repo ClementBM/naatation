@@ -9,8 +9,23 @@
  */
 function onOpen(e) {
     var menu = DocumentApp.getUi().createAddonMenu();
-    menu.addItem('Add Annotation', 'showAnnotationSidebar');
+    menu.addItem('Ouvrir', 'showAnnotationSidebar');
     menu.addToUi();
+}
+
+/**
+ * Opens a sidebar in the document containing the add-on's user interface.
+ */
+function showAnnotationSidebar() {
+  html = createSidebar();
+  DocumentApp.getUi().showSidebar(html);
+}
+
+function createSidebar() {
+    var doc = HtmlService.createTemplateFromFile('annotation_sidebar');
+    html = doc.evaluate();
+    html.setTitle('NAATation');
+    return html;
 }
 
 /**

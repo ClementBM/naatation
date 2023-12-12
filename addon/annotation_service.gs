@@ -35,21 +35,6 @@ Array.prototype.findIndex = function(search){
   return -1;
 }
 
-/**
- * Opens a sidebar in the document containing the add-on's user interface.
- */
-function showAnnotationSidebar() {
-  html = createSidebar();
-  DocumentApp.getUi().showSidebar(html);
-}
-
-function createSidebar() {
-    var doc = HtmlService.createTemplateFromFile('annotation_sidebar');
-    html = doc.evaluate();
-    html.setTitle('NAATation');
-    return html;
-}
-
 function initAnnotations() {
   var annotationDict = Object.assign({}, validationDict);
   var props = PropertiesService.getDocumentProperties();
@@ -242,45 +227,51 @@ function checkSheetHeaders(sheet){
 }
 
 function exportToSpreadSheet(){
-  const docId = getDocId();
-  const docUrl = getDocUrl();
+  try {
+    const docId = getDocId();
+    const docUrl = getDocUrl();
 
-  // look for the document url in the sheet
-  var affaireSpreadSheet = SpreadsheetApp.openById("1bpOTcR6ZXJK6PfdY4hHASbXsmzIg_Fbk29-9yWi1T70");
-  var sheet = affaireSpreadSheet.getSheetByName("décisions");
+    // look for the document url in the sheet
+    var affaireSpreadSheet = SpreadsheetApp.openById("1bpOTcR6ZXJK6PfdY4hHASbXsmzIg_Fbk29-9yWi1T70");
+    var sheet = affaireSpreadSheet.getSheetByName("décisions");
 
-  checkSheetHeaders(sheet);
+    checkSheetHeaders(sheet);
 
-  var columnValues = sheet.getRange(2, 1, sheet.getLastRow()).getValues(); // 1st is header row
+    var columnValues = sheet.getRange(2, 1, sheet.getLastRow()).getValues(); // 1st is header row
 
-  const annotationDict = initAnnotations();
+    const annotationDict = initAnnotations();
 
-  var searchResult = columnValues.findIndex(docId); //Row Index - 2
+    var searchResult = columnValues.findIndex(docId); //Row Index - 2
 
-  var rowIndex = sheet.getLastRow();
+    var rowIndex = sheet.getLastRow();
 
-  if(searchResult != -1)
-  {
-    // searchResult + 2 is row index
-    rowIndex = searchResult + 2;
-  } else if(rowIndex == 1) {
-    rowIndex = 2;
-  }
-
-  var cellContent = sheet.getRange(rowIndex, 1);
-  cellContent.setValues([[docUrl]]);
-
-  Object.keys(annotationDict).forEach(function(key) {
-    var cellContent = sheet.getRange(rowIndex, annotationDict[key]["order"] + 1);
-
-    var cellValue = annotationDict[key]["value"];
-
-    if (Object.keys(attributeTypeMap).includes(annotationDict[key]["type"]) && cellValue){
-      cellValue = cellValue.replaceAll("*SEP*", "\n");
-      cellValue = cellValue.replaceAll("*OPTION*", " -- ");
+    if(searchResult != -1)
+    {
+      // searchResult + 2 is row index
+      rowIndex = searchResult + 2;
+    } else {
+      rowIndex += 1;
     }
-    cellContent.setValues([[cellValue]]);
-  });
+
+    var cellContent = sheet.getRange(rowIndex, 1);
+    cellContent.setValues([[docUrl]]);
+
+    Object.keys(annotationDict).forEach(function(key) {
+      var cellContent = sheet.getRange(rowIndex, annotationDict[key]["order"] + 1);
+
+      var cellValue = annotationDict[key]["value"];
+
+      if (Object.keys(attributeTypeMap).includes(annotationDict[key]["type"]) && cellValue){
+        cellValue = cellValue.replaceAll("*SEP*", "\n");
+        cellValue = cellValue.replaceAll("*OPTION*", " -- ");
+      }
+      cellContent.setValues([[cellValue]]);
+    });
+
+    var widget = HtmlService.createHtmlOutput("<p>L'export a réussi 🥳🥳🥳</p>").setWidth(250).setHeight(80);
+    DocumentApp.getUi().showModalDialog(widget, "Succès");
+  } catch(err) {
+    var widget = HtmlService.createHtmlOutput("<p>L'export a échoué 💩</p>").setWidth(250).setHeight(80);
+    DocumentApp.getUi().showModalDialog(widget, "Erreur");
+  }
 }
-
-

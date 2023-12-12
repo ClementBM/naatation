@@ -1,26 +1,38 @@
 # Annotation Tool for NAAT organization (NAATation)
 
-NAATation is a free Google Docs add-on that helps annotate climate/environmental litigation summaries on Google Doc.
+NAATation is a free Google Doc™ add-on that helps annotate climate/environmental litigation summaries on Google Doc™.
+
+![Add-on screenshot](addon-screenshot.png)
 
 ## Overview
 
-TODO
+This add-on enables NAAT's volunteers to structure the information inside textual summaries of the climate trials.
 
-`NAATation` requires minimal permissions: it will ask for permission to access the current Doc (to convert it), a permission to create a sidebar (the user interface) and one last for the spreadsheet export function. It requires no other permissions.
+With `NAATation` you can:
+* select a piece of text
+* annotate it by clicking on the desired attribute in the add-on's sidebar
+* export the annotations in a given spreadsheet
 
-* The ../auth/script.container.ui scope allows this Add-on to display a sidebar.
-* The .../auth/documents scope allows to get the selected text in the current doc.
-* The .../auth/spreadsheets	scope allows to export the document's annotations in a chosen destination sheet.
+## Permissions
+
+When you install `NAATation`, you are asked to accept the following authorizations:
+* see your primary Google Account email address (https://www.googleapis.com/auth/userinfo.email)
+* see your personal info, including any personal info you've made publicly available (https://www.googleapis.com/auth/userinfo.profile)
+* see, edit, create, and delete all your Google Docs documents (https://www.googleapis.com/auth/documents)
+* permission to create a sidebar (https://www.googleapis.com/auth/script.container.ui)
+* see, edit, create, and delete all your Google Sheets spreadsheets (https://www.googleapis.com/auth/spreadsheets)
+
+Why does `NAATation` need those access scopes?
+* **Google Docs**: I will need read/write access to Google Docs documents in order to add properties to the document so that my app can save the annotated content. A narrower scope would not be sufficient because I wouldn't be able to save textual annotations to the document of interest.
+* **Google Sheets**: I will need read/write access to Google Sheets documents in order to append and modify rows within an aggregation file so that my app can export the textual annotations from the Google Doc to one specific Google Sheet document. A narrower scope would not be sufficient because I wouldn't be able to gather the textual annotations into one Google Sheet document.
+* **Sidebars**: to open `NAATation` as a sidebar in your Google applications
 
 ## Installation and other details
 
-* Installation: [Install NAATation](https://workspace.google.com/marketplace/app/naatation/TODO) from the Google Workspace Marketplace.
-
+* Installation: [Install NAATation](https://workspace.google.com/marketplace/app/naatation/879669756842) from the Google Workspace Marketplace.
 * License: `NAATation` uses the [Apache 2.0 license](https://github.com/ClementBM/naatation/blob/master/LICENSE).
-
 * Documentation: See TODO for more information about features and usage.
-
-* [Privacy policy](TODO).
+* [Privacy policy](https://clementbm.github.io/naatation/#terms-and-conditions).
 
 ## Contributing
 
